@@ -12,54 +12,64 @@ namespace Movies
     /// </summary>
     public class MovieDatabase
     {
-        private List<Movie> movies = new List<Movie>();
+        private static List<Movie> movies = new List<Movie>();
 
         /// <summary>
         /// Loads the movie database from the JSON file
         /// </summary>
-        public MovieDatabase() {
-            
-            using (StreamReader file = System.IO.File.OpenText("movies.json"))
+
+        public static List<Movie> All {
+            get 
             {
-                string json = file.ReadToEnd();
-                movies = JsonConvert.DeserializeObject<List<Movie>>(json);
-            }
+                if(movies == null)
+                {
+                    using (StreamReader file = System.IO.File.OpenText("movies.json"))
+                    {
+                        string json = file.ReadToEnd();
+                        movies = JsonConvert.DeserializeObject<List<Movie>>(json);
+                    }
+                }
+                return movies; 
+            } 
         }
 
-        public List<Movie> All { get { return movies; } }
+        public static List<Movie> Search(string search, List<Movie> movies) {
+            List<Movie> results = new List<Movie>();
 
-        public List<Movie> SearchAndFilter(string searchString, List<string> rating) {
-            if (searchString == null && rating.Count == 0) return All;
+            foreach(Movie movie in movies)
+            {
+                if(movie.Title.Contains(search, StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add(movie);
+                }
+            }
 
+            return results;
+        }
+
+        public static List<Movie> FilterByMPAA(List<Movie> movies, List<string> mpaa)
+        {
+            List<Movie> results = new List<Movie>();
+
+            foreach(Movie movie in movies)
+            {
+                if (mpaa.Contains(movie.MPAA_Rating))
+                {
+                    results.Add(movie);
+                }
+            }
+            return results;
+        }
+
+        public static List<Movie> FilterByMinIMDB(List<Movie> movies, float minIMDB)
+        {
             List<Movie> results = new List<Movie>();
             foreach(Movie movie in movies)
             {
-                // Case 1: Search string AND ratings
-                if(searchString != null && rating.Count > 0)
+                if (movie.IMDB_Rating != null && minIMDB <= movie.IMDB_Rating)
                 {
-                    if(movie.Title != null && movie.Title.Contains(searchString, StringComparison.InvariantCultureIgnoreCase) && rating.Contains(movie.MPAA_Rating))
-                    {
-                        results.Add(movie);
-                    }
+                    results.Add(movie);
                 }
-
-                // Case 2: Search string only
-                else if(searchString != null)
-                {
-                    if (movie.Title != null && movie.Title.Contains(searchString, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        results.Add(movie);
-                    }
-                }
-                else if(rating.Count > 0)
-                {
-                    if (rating.Contains(movie.MPAA_Rating))
-                    {
-                        results.Add(movie);
-                    }
-                }
-                // Case 3: Ratings only
-
             }
             return results;
         }
